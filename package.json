@@ -1,0 +1,67 @@
+{
+  "name": "wax-prosemirror-monorepo",
+  "version": "0.0.13",
+  "private": true,
+  "description": "Monorepo for wax-prosemirror, its components and its integrations",
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.coko.foundation:wax/wax-prosemirror.git"
+  },
+  "license": "MIT",
+  "author": "Christos Kokosias",
+  "main": "index.js",
+  "workspaces": [
+    "wax-prosemirror-core",
+    "wax-prosemirror-services",
+    "wax-questions-service",
+    "editors/*"
+  ],
+  "scripts": {
+    "bootstrap": "lerna bootstrap --no-ci --hoist",
+    "build": "lerna run build",
+    "clean": "yarn run clean:artifacts && yarn run clean:packages && yarn run clean:root",
+    "clean:artifacts": "lerna run clean --parallel",
+    "clean:packages": "lerna clean --yes",
+    "clean:root": "rm -rf node_modules",
+    "cz": "git-cz",
+    "editoria": "cd editors/demo && yarn start",
+    "reset": "yarn clean && yarn"
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS && lint-staged"
+    }
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-customizable"
+    }
+  },
+  "resolutions": {
+    "styled-components": "5.3.1"
+  },
+  
+  "devDependencies": {
+    "@babel/plugin-proposal-class-properties": "^7.0.0",
+    "@babel/plugin-proposal-decorators": "^7.0.0",
+    "@babel/preset-env": "^7.0.0",
+    "@babel/preset-react": "^7.0.0",
+    "@babel/plugin-transform-runtime": "^7.0.0",
+    "@coko/lint": "^1.1.0",
+    "@rollup/plugin-commonjs": "^11.0.2",
+    "babel-plugin-parameter-decorator": "1.0.12",
+    "css-loader": "^0.28.11",
+    "faker": "^4.1.0",
+    "lerna": "^2.6.0",
+    "lodash": "^4.17.19",
+    "react-app-rewired": "^2.1.2",
+    "rollup": "^2.2.0",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-peer-deps-external": "^2.2.2",
+    "rollup-plugin-terser": "^5.3.0",
+    "rollup-plugin-import-css": "^3.0.2",
+    "style-loader": "^0.23.1",
+    "styled-components": "^5.3.1",
+    "svg-inline-loader": "^0.8.0"
+  }
+}
