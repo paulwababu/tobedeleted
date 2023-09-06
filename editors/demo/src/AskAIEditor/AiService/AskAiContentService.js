@@ -14,12 +14,12 @@ class AskAiContentService extends Service {
       AskAiContentPlaceHolderPlugin('AskAiContentPlaceHolder'),
     );
     const createOverlay = this.container.get('CreateOverlay');
-    const layout = this.container.get('Layout');
-    
+    const config = this.config;
+
     // Create the overlay
     createOverlay(
       AskAIOverlay,
-      {},
+      { config },
       {
         nodeType: '',
         markType: '',
