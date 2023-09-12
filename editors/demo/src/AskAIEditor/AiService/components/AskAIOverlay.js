@@ -1,7 +1,39 @@
-import React, { useLayoutEffect, useContext, useState } from 'react';
+import React, { useRef, useLayoutEffect, useContext, useState } from 'react';
 import styled from 'styled-components';
 import { WaxContext } from 'wax-prosemirror-core';
 import { icons } from 'wax-prosemirror-core';
+import { replaceSelectedText } from '../ReplaceSelectedText';
+import { insertTextBelowSelection } from '../InsertTextBelowSelection';
+
+const ActionButton = styled.button`
+  align-items: center;
+  align-self: stretch;
+  background: white;
+  border: 0.5px #f0f0f0 solid;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  justify-content: flex-start;
+  padding: 8px 12px;
+`;
+
+const ActionSection = styled.div`
+  align-items: flex-start;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 188px;
+`;
+
+const ActionText = styled.div`
+  color: ${props => props.color || '#434343'};
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  word-wrap: break-word;
+`;
 
 const AskAIForm = styled.div`
   align-items: center;
@@ -17,15 +49,16 @@ const AskAIForm = styled.div`
   width: 458px;
 `;
 
-const AskAIFormText = styled.div`
-  color: ${props => (props.isFocused ? '#000' : '#BFBFBF')};
+const AskAIFormInput = styled.input`
+  background: transparent;
+  border: none;
+  color: #000;
   font-family: 'Helvetica Neue', sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 22px;
   outline: none;
   width: 100%;
-  word-wrap: break-word;
 `;
 
 const ResultDiv = styled.div`
@@ -52,56 +85,68 @@ const ResultText = styled.div`
   word-wrap: break-word;
 `;
 
-const ActionSection = styled.div`
-  align-items: flex-start;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.04);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  width: 188px;
-`;
-
-const ActionItem = styled.div`
-  align-items: center;
-  align-self: stretch;
-  background: white;
-  border: 0.5px #f0f0f0 solid;
-  display: inline-flex;
-  gap: 8px;
-  justify-content: flex-start;
-  padding: 8px 12px;
-`;
-
-const ActionText = styled.div`
-  color: ${props => props.color || '#434343'};
-  font-family: 'Helvetica Neue', sans-serif;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 22px;
-  word-wrap: break-word;
-`;
-
-const SubmitButton = styled.div`
+const SubmitButton = styled.button`
+  background: none;
+  border: none;
   cursor: pointer;
+  outline: none;
   padding: 0 8px; /* Adjust padding as needed */
 `;
 
 const AskAIOverlay = ({ setPosition, position, config }) => {
   const { activeView } = useContext(WaxContext);
-  const [inputValue, setInputValue] = useState('');
   const [result, setResult] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
   const AskAiContentTransformation = config.AskAiContentTransformation;
+  const inputRef = useRef(null);
+
+  const tryAgain = () => {
+    // Reset the state to initial values
+    setIsSubmitted(false);
+    setResult('');
+
+    // Call the handleSubmit function again
+    handleSubmit(new Event('submit'));
+  };
+
+  const handleInsertTextBelow = () => {
+    setIsSubmitted(false);
+    setIsLoading(true);
+    insertTextBelowSelection(activeView, AskAiContentTransformation);
+    setPosition({ ...position, top: position.top + 50 });
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 4150); //for seamless transition
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
     setIsLoading(true);
-    const response = await AskAiContentTransformation(inputValue);
-    setResult(response);
-    setIsSubmitted(true);
-    setIsLoading(false);
+    const inputValue = inputRef.current.value;
+    try {
+      const response = await AskAiContentTransformation(inputValue);
+      setResult(response);
+      setIsSubmitted(true);
+    } catch (error) {
+      setResult(error);
+      setIsSubmitted(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReplaceText = () => {
+    replaceSelectedText(activeView, AskAiContentTransformation);
+  };
+
+  const discardResults = () => {
+    // Clear the input field
+    inputRef.current.value = '';
+
+    // Reset the state variables
+    setResult('');
+    setIsSubmitted(false);
   };
 
   const handleKeyDown = e => {
@@ -128,26 +173,12 @@ const AskAIOverlay = ({ setPosition, position, config }) => {
   return (
     <>
       <AskAIForm>
-        <AskAIFormText
-          contentEditable={true}
-          onFocus={() => setIsFocused(true)}
-          onBlur={e => {
-            setInputValue(e.target.innerText);
-            setIsFocused(false);
-          }}
+        <AskAIFormInput
+          ref={inputRef}
+          type="text"
           onKeyDown={handleKeyDown}
-        >
-          {isFocused ? (
-            ''
-          ) : (
-            <>
-              <span role="img" aria-label="roleImg">
-                ✨
-              </span>{' '}
-              Find a better way to word this
-            </>
-          )}
-        </AskAIFormText>
+          placeholder="✨ Find a better way to word this"
+        />
         <SubmitButton onClick={handleSubmit}>
           {isLoading ? <icons.loaderIco /> : <icons.submitIco />}
         </SubmitButton>
@@ -158,26 +189,26 @@ const AskAIOverlay = ({ setPosition, position, config }) => {
             <ResultText>{result}</ResultText>
           </ResultDiv>
           <ActionSection>
-            <ActionItem>
+            <ActionButton onClick={handleReplaceText}>
               <ActionText>
                 <icons.replaceIco /> Replace selected text
               </ActionText>
-            </ActionItem>
-            <ActionItem>
+            </ActionButton>
+            <ActionButton onClick={handleInsertTextBelow}>
               <ActionText>
                 <icons.insertIco /> Insert
               </ActionText>
-            </ActionItem>
-            <ActionItem>
+            </ActionButton>
+            <ActionButton onClick={tryAgain}>
               <ActionText>
                 <icons.tryAgain /> Try again
               </ActionText>
-            </ActionItem>
-            <ActionItem>
+            </ActionButton>
+            <ActionButton onClick={discardResults}>
               <ActionText color="#FF4E4E">
                 <icons.deleteIco /> Discard
               </ActionText>
-            </ActionItem>
+            </ActionButton>
           </ActionSection>
         </>
       )}
