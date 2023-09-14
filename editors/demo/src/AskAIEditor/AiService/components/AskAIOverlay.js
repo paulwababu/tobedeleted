@@ -111,21 +111,23 @@ const AskAIOverlay = ({ setPosition, position, config }) => {
   };
 
   const handleInsertTextBelow = () => {
-    setIsSubmitted(false);
-    setIsLoading(true);
-    insertTextBelowSelection(activeView, AskAiContentTransformation);
-    setPosition({ ...position, top: position.top + 50 });
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 4150); //for seamless transition
+    insertTextBelowSelection(activeView, result);
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
     setIsLoading(true);
     const inputValue = inputRef.current.value;
+  
+    // Get the highlighted text from the editor
+    const { from, to } = activeView.state.selection;
+    const highlightedText = activeView.state.doc.textBetween(from, to);
+  
+    // Combine the user's input and the highlighted text
+    const combinedInput = `${inputValue}\n\nHighlighted Text: ${highlightedText}`;
+  
     try {
-      const response = await AskAiContentTransformation(inputValue);
+      const response = await AskAiContentTransformation(combinedInput);
       setResult(response);
       setIsSubmitted(true);
     } catch (error) {
@@ -134,10 +136,11 @@ const AskAIOverlay = ({ setPosition, position, config }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  };  
+  
 
   const handleReplaceText = () => {
-    replaceSelectedText(activeView, AskAiContentTransformation);
+    replaceSelectedText(activeView, result);
   };
 
   const discardResults = () => {
